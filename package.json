@@ -1,0 +1,20 @@
+{
+  "name": "draco-mesh-web-decoder",
+  "version": "1.0.0",
+  "description": "A minimal version of the draco mesh decoder for the browser",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jvail/draco-mesh-web-decoder.git"
+  },
+  "scripts": {
+    "build-draco": "mkdir -p src/draco-build && cd src/draco-build && cmake ../ && make -j4",
+    "build-str-import": "mkdir -p src/tmp && node script/wasm_str.js &&  node script/draco_add_export.js && rollup -c rollup.config.worker.js && node script/worker_str.js",
+    "build": "npm run build-draco && npm run build-str-import && rollup -c"
+  },
+  "author": "jvail",
+  "license": "ISC",
+  "devDependencies": {
+    "rollup": "^2.3.2",
+    "rollup-plugin-terser": "^5.3.0"
+  }
+}

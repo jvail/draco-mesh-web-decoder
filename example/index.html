@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>draco</title>
+</head>
+
+<body>
+
+    <script type="module">
+        import worker from'../dist/index.js';
+        worker.onmessage = msg => {
+            console.log(msg.data);
+            if (msg.data.initialized) {
+                fetch('../src/draco/javascript/example/models/bunny.drc')
+                    .then(response => response.arrayBuffer())
+                    .then(buffer => {
+                        worker.postMessage(buffer, [buffer])
+                    })
+            }
+        };
+
+    </script>
+
+</body>
+
+</html>
