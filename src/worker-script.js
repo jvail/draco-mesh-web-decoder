@@ -1,6 +1,6 @@
 /* copied and modified from draco js example */
 
-import DracoMeshWebDecoder from './tmp/draco_decoder';
+import DracoMeshWebDecoder from './draco-build/draco_decoder';
 import wasm_str from './tmp/import-wasm'
 const wasmBinary = Uint8Array.from(atob(wasm_str), c => c.charCodeAt(0)).buffer;
 const attributeIDs = {
