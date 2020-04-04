@@ -84,13 +84,13 @@ function decodeAttribute(decoder, mesh, name, attributeType, attribute) {
 
 function decode(drc) {
 
+    const geometry = { index: null, attributes: [] };
     const buffer = new draco.DecoderBuffer();
     buffer.Init(new Int8Array(drc), drc.byteLength);
     const decoder = new draco.Decoder();
 
     if (decoder.GetEncodedGeometryType(buffer) === draco.TRIANGULAR_MESH) {
 
-        geometry = { index: null, attributes: [] };
         const mesh = new draco.Mesh();
         decoder.DecodeBufferToMesh(buffer, mesh);
 
