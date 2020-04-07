@@ -1,11 +1,11 @@
-import { terser } from "rollup-plugin-terser";
+import { terser } from 'rollup-plugin-terser';
 
 export default [
     {
         input: 'src/worker-script.js',
         output: [
-            { file: `src/tmp/worker-script-bundle.js`, format: 'es', preferConst: true }
+            { file: `src/tmp/worker-script.min.js`, format: 'es', preferConst: true }
         ],
-        plugins: [terser()]
+        plugins: [terser({ output: { quote_style: 1 } })]
     }
 ];

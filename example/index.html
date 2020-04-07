@@ -9,15 +9,19 @@
 <body>
 
     <script type="module">
-        import worker from'../dist/index.js';
+        import getWorker from '../dist/index.js';
+        const worker = getWorker();
         worker.onmessage = msg => {
-            console.log(msg.data);
-            if (msg.data.initialized) {
+            if ('initialized' in msg.data && msg.data.initialized) {
                 fetch('../src/draco/javascript/example/models/bunny.drc')
                     .then(response => response.arrayBuffer())
                     .then(buffer => {
                         worker.postMessage(buffer, [buffer])
                     })
+            } else if (msg.data) {
+                console.log(msg.data);
+            } else {
+                console.log('error');
             }
         };
 
