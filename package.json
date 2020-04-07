@@ -6,6 +6,7 @@
     "type": "git",
     "url": "git+https://github.com/jvail/draco-mesh-web-decoder.git"
   },
+  "main": "dist/index.js",
   "scripts": {
     "build-draco": "mkdir -p src/draco-build && cd src/draco-build && cmake ../ && make -j4 && sed -i '$ a\\export default DracoMeshWebDecoder;' draco_decoder.js",
     "build-str-import": "mkdir -p src/tmp && node script/wasm_str.js && rollup -c rollup.config.worker.js && node script/worker_str.js",
