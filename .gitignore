@@ -1,3 +1,4 @@
 draco-build
 tmp
 node_modules
+*.debug.*

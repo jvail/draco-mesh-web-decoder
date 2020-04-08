@@ -11,7 +11,9 @@
     "build-draco": "mkdir -p src/draco-build && cd src/draco-build && cmake ../ && make -j4 && sed -i '$ a\\export default DracoMeshWebDecoder;' draco_decoder.js",
     "build-str-import": "mkdir -p src/tmp && node script/wasm_str.js && rollup -c rollup.config.worker.js && node script/worker_str.js",
     "build": "npm run build-draco && npm run build-str-import && rollup -c",
-    "clean": "rm -fr src/draco-build src/tmp dist/index.js"
+    "build-str-import:debug": "mkdir -p src/tmp && node script/wasm_str.js && rollup --configDebug -c rollup.config.worker.js && node script/worker_str.js",
+    "build:debug": "npm run build-draco && npm run build-str-import:debug",
+    "clean": "rm -fr src/draco-build src/tmp dist/index.js dist/index.debug.js"
   },
   "author": "jvail",
   "license": "Apache-2.0",

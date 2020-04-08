@@ -106,8 +106,10 @@ function decode(drc) {
         for (const attributeName in attributeIDs) {
             const attributeType = attributeTypes[attributeName];
             const attributeID = decoder.GetAttributeId(mesh, draco[attributeIDs[attributeName]]);
-            const attribute = decoder.GetAttribute(mesh, attributeID);
-            geometry.attributes.push(decodeAttribute(decoder, mesh, attributeName, attributeType, attribute));
+            if (attributeID >= 0) {
+                const attribute = decoder.GetAttribute(mesh, attributeID);
+                geometry.attributes.push(decodeAttribute(decoder, mesh, attributeName, attributeType, attribute));
+            }
         }
 
         draco.destroy(mesh);

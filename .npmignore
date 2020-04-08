@@ -2,3 +2,4 @@ src/draco
 src/draco-build
 src/tmp
 .gitmodules
+*.debug.*
