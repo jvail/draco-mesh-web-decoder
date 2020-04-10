@@ -10,7 +10,7 @@
 import getWorker from 'draco-mesh-web-decoder';
 const worker = getWorker();
 worker.onmessage = msg => {
-    if ('initialized' in msg.data && msg.data.initialized) {
+    if (msg.data && 'initialized' in msg.data && msg.data.initialized) {
         fetch('file.drc')
             .then(response => response.arrayBuffer())
             .then(buffer => {
