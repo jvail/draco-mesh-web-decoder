@@ -16,7 +16,7 @@
                 fetch('../src/draco/javascript/example/models/bunny.drc')
                     .then(response => response.arrayBuffer())
                     .then(buffer => {
-                        worker.postMessage(buffer, [buffer])
+                        worker.postMessage({ drc: buffer }, [buffer])
                     })
             } else if (msg.data) {
                 console.log(msg.data);
