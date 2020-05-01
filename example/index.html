@@ -13,10 +13,10 @@
         const worker = getWorker();
         worker.onmessage = msg => {
             if (msg.data && 'initialized' in msg.data && msg.data.initialized) {
-                fetch('../src/draco/javascript/example/models/bunny.drc')
+                fetch('mesh.drc')
                     .then(response => response.arrayBuffer())
-                    .then(buffer => {
-                        worker.postMessage({ drc: buffer }, [buffer])
+                    .then(drc => {
+                        worker.postMessage({ drc })
                     })
             } else if (msg.data) {
                 console.log(msg.data);

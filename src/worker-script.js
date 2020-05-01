@@ -3,24 +3,46 @@
 import DracoMeshWebDecoder from './draco-build/draco_decoder';
 import wasm_str from './tmp/import-wasm'
 const wasmBinary = Uint8Array.from(atob(wasm_str), c => c.charCodeAt(0)).buffer;
-let attributeIDs = {
-    position: 'POSITION',
-    normal: 'NORMAL',
-    color: 'COLOR',
-    uv: 'TEX_COORD'
-};
-let attributeTypes = {
-    position: 'Float32Array',
-    normal: 'Float32Array',
-    color: 'Uint8Array',
-    uv: 'Float32Array'
-};
-let attributeMetadata = {
-    position: [],
-    normal: [],
-    color: [],
-    uv: []
-};
+
+const getConfig = (userConfig) => {
+    const attributeIDs = {
+        position: 'POSITION',
+        normal: 'NORMAL',
+        color: 'COLOR',
+        uv: 'TEX_COORD',
+        generic: 'GENERIC'
+    };
+    const attributeTypes = {
+        position: 'Float32Array',
+        normal: 'Float32Array',
+        color: 'Uint8Array',
+        uv: 'Float32Array',
+        generic: 'Uint32Array'
+    };
+    const attributeMetadata = {
+        position: [],
+        normal: [],
+        color: [],
+        uv: [],
+        generic: []
+    };
+
+    return {
+        attributeIDs: {
+            ...attributeIDs,
+            ...(userConfig['ids'] || {} )
+        },
+        attributeTypes: {
+            ...attributeTypes,
+            ...(userConfig['types'] || {})
+        },
+        attributeMetadata: {
+            ...attributeMetadata,
+            ...(userConfig['metadata'] || {})
+        }
+    };
+
+}
 
 function decodeAttribute(decoder, mesh, name, attributeType, attribute) {
 
@@ -142,47 +164,44 @@ function decodeMetadata(querier, metadata, metadataTypes, attributeName) {
 }
 
 
-function decode(drcs, config) {
+function decode(drcs, configs) {
 
-    attributeTypes = config['types'] ? {
-        ...attributeTypes,
-        ...config['types']
-    } : attributeTypes;
-    attributeMetadata = config['metadata'] ? {
-        ...attributeMetadata,
-        ...config['metadata']
-    } : attributeMetadata;
     const metadataQuerier = new draco.MetadataQuerier();
 
-    return drcs.map(drc => {
+    return drcs.map((drc, i) => {
 
-        const geometry = { index: null, attributes: [], metadata: {} };
+        const { attributeIDs, attributeTypes, attributeMetadata } = getConfig(Array.isArray(configs) ? configs[i] : configs);
+        const geometry = { index: { array: new Float32Array() }, attributes: [], metadata: {} };
         const buffer = new draco.DecoderBuffer();
         buffer.Init(new Int8Array(drc), drc.byteLength);
         const decoder = new draco.Decoder();
+        const type = decoder.GetEncodedGeometryType(buffer);
+        let meshOrCloud, status;
 
-        if (decoder.GetEncodedGeometryType(buffer) === draco.TRIANGULAR_MESH) {
-
-            const mesh = new draco.Mesh();
-            decoder.DecodeBufferToMesh(buffer, mesh);
-
-            const length = mesh.num_faces() * 3;
+        if (type === draco.TRIANGULAR_MESH) {
+            meshOrCloud = new draco.Mesh();
+            status = decoder.DecodeBufferToMesh(buffer, meshOrCloud);
+            const length = meshOrCloud.num_faces() * 3;
             const size = length * 4;
             const ptr = draco._malloc(size);
-            decoder.GetTrianglesUInt32Array(mesh, size, ptr);
+            decoder.GetTrianglesUInt32Array(meshOrCloud, size, ptr);
             const index = new Uint32Array(draco.HEAPU32.buffer, ptr, length).slice();
             geometry.index = { array: index, itemSize: 1 };
-
             draco._free(ptr);
+        } else if (type === draco.POINT_CLOUD) {
+            meshOrCloud = new draco.PointCloud();
+            status = decoder.DecodeBufferToPointCloud(buffer, meshOrCloud);
+        }
 
+        if (status.ok()) {
             for (const attributeName in attributeIDs) {
                 const attributeType = attributeTypes[attributeName];
-                const attributeID = decoder.GetAttributeId(mesh, draco[attributeIDs[attributeName]]);
+                const attributeID = decoder.GetAttributeId(meshOrCloud, draco[attributeIDs[attributeName]]);
                 const metadataTypes = attributeMetadata[attributeName];
-                const metadata = decoder.GetAttributeMetadata(mesh, attributeID);
+                const metadata = decoder.GetAttributeMetadata(meshOrCloud, attributeID);
+                const attribute = decoder.GetAttribute(meshOrCloud, attributeID);
                 if (attributeID >= 0) {
-                    const attribute = decoder.GetAttribute(mesh, attributeID);
-                    geometry.attributes.push(decodeAttribute(decoder, mesh, attributeName, attributeType, attribute));
+                    geometry.attributes.push(decodeAttribute(decoder, meshOrCloud, attributeName, attributeType, attribute));
                     if (metadata) {
                         geometry.metadata = {
                             ...geometry.metadata,
@@ -191,11 +210,11 @@ function decode(drcs, config) {
                     }
                 }
             }
-
-            draco.destroy(mesh);
-
+        } else {
+            throw new Error(status.error_msg());
         }
 
+        draco.destroy(meshOrCloud);
         draco.destroy(decoder);
         draco.destroy(buffer);
 
@@ -211,10 +230,10 @@ DracoMeshWebDecoder({ wasmBinary })
         self.postMessage({ initialized: true });
         self.onmessage = function (evt) {
             try {
-                let { drc, config } = evt.data;
+                let { drc, configs } = evt.data;
                 drcs = (Array.isArray(drc) ? drc : [drc]).filter(drc => drc instanceof ArrayBuffer);
 
-                const geometries = decode(drcs, config || {}).filter(decoded => !!decoded);
+                const geometries = decode(drcs, configs || {}).filter(decoded => !!decoded);
                 const transfers = geometries ? [...geometries.reduce((arr, geom) => {
                     return [...arr, ...[geom.index.array.buffer, ...Object.keys(geom.attributes).map(key => geom.attributes[key].array.buffer)]];
                 }, [])] : []

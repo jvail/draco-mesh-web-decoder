@@ -1,7 +1,7 @@
 {
-  "name": "draco-mesh-web-decoder",
+  "name": "draco-web-decoder",
   "version": "1.0.0",
-  "description": "The draco mesh decoder for the browser",
+  "description": "draco decoder for the browser",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jvail/draco-mesh-web-decoder.git"

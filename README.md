@@ -1,13 +1,12 @@
-### Mesh draco file decoder for the browser
+### draco file decoder for the browser
 
 * single file, can be bundled
 * larger since wasm & worker scripts are bundled as base64
-* only mesh decoding
 
 ### Usage
 
 ```javascript
-import getWorker from 'draco-mesh-web-decoder';
+import getWorker from 'draco-web-decoder';
 const worker = getWorker();
 worker.onmessage = msg => {
     if (msg.data && 'initialized' in msg.data && msg.data.initialized) {
