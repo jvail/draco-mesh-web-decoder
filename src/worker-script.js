@@ -19,13 +19,6 @@ const getConfig = (userConfig) => {
         uv: 'Float32Array',
         generic: 'Uint32Array'
     };
-    const attributeMetadata = {
-        position: [],
-        normal: [],
-        color: [],
-        uv: [],
-        generic: []
-    };
 
     return {
         attributeIDs: {
@@ -36,10 +29,7 @@ const getConfig = (userConfig) => {
             ...attributeTypes,
             ...(userConfig['types'] || {})
         },
-        attributeMetadata: {
-            ...attributeMetadata,
-            ...(userConfig['metadata'] || {})
-        }
+        metadataTypes: userConfig['metadata'] || []
     };
 
 }
@@ -109,7 +99,7 @@ function decodeAttribute(decoder, mesh, name, attributeType, attribute) {
 
 }
 
-function decodeMetadata(querier, metadata, metadataTypes, attributeName) {
+function decodeMetadata(querier, metadata, metadataTypes) {
 
     return metadataTypes.reduce((data, metadataType) => {
         const { name, type } = metadataType;
@@ -130,32 +120,29 @@ function decodeMetadata(querier, metadata, metadataTypes, attributeName) {
                         arr = new draco.DracoInt32Array();
                         querier.GetIntEntryArray(metadata, name, arr);
                         length = arr.size();
-                        ptr = arr.data().ptr;
-                        entry = new Int32Array(draco.HEAPU8.buffer.slice(ptr, ptr + length * 4));
-                        // for (let idx = 0; idx < length; idx++) {
-                        //     entry[idx] = arr.GetValue(idx);
-                        // }
+                        // ptr = arr.data().ptr;
+                        // entry = new Int32Array(draco.HEAPU8.buffer.slice(ptr, ptr + length * 4));
+                        entry = new Int32Array(length);
+                        for (let idx = 0; idx < length; idx++) {
+                            entry[idx] = arr.GetValue(idx);
+                        }
                         break;
                     case 'double[]':
                         arr = new draco.DracoFloat32Array();
                         querier.GetDoubleEntryArray(metadata, name, arr);
                         length = arr.size();
-                        ptr = arr.data().ptr;
-                        entry = new Float32Array(draco.HEAPU8.buffer.slice(ptr, ptr + length * 4));
-                        // for (let idx = 0; idx < length; idx++) {
-                        //     entry[idx] = arr.GetValue(idx);
-                        // }
+                        // ptr = arr.data().ptr;
+                        // entry = new Float32Array(draco.HEAPU8.buffer.slice(ptr, ptr + length * 4));
+                        entry = new Float32Array(length);
+                        for (let idx = 0; idx < length; idx++) {
+                            entry[idx] = arr.GetValue(idx);
+                        }
                         break;
                 }
             } catch (err) {
                 console.log(err);
             } finally {
-                const obj = {};
-                obj[name] = entry;
-                data[attributeName] = {
-                    ...data[attributeName],
-                    ...obj
-                }
+                data[name] = entry;
             }
         }
         return data;
@@ -170,7 +157,7 @@ function decode(drcs, configs) {
 
     return drcs.map((drc, i) => {
 
-        const { attributeIDs, attributeTypes, attributeMetadata } = getConfig(Array.isArray(configs) ? configs[i] : configs);
+        const { attributeIDs, attributeTypes, metadataTypes } = getConfig(Array.isArray(configs) ? configs[i] : configs);
         const geometry = { index: { array: new Float32Array() }, attributes: [], metadata: {} };
         const buffer = new draco.DecoderBuffer();
         buffer.Init(new Int8Array(drc), drc.byteLength);
@@ -197,18 +184,14 @@ function decode(drcs, configs) {
             for (const attributeName in attributeIDs) {
                 const attributeType = attributeTypes[attributeName];
                 const attributeID = decoder.GetAttributeId(meshOrCloud, draco[attributeIDs[attributeName]]);
-                const metadataTypes = attributeMetadata[attributeName];
-                const metadata = decoder.GetAttributeMetadata(meshOrCloud, attributeID);
                 const attribute = decoder.GetAttribute(meshOrCloud, attributeID);
                 if (attributeID >= 0) {
                     geometry.attributes.push(decodeAttribute(decoder, meshOrCloud, attributeName, attributeType, attribute));
-                    if (metadata) {
-                        geometry.metadata = {
-                            ...geometry.metadata,
-                            ...decodeMetadata(metadataQuerier, metadata, metadataTypes, attributeName)
-                        };
-                    }
                 }
+            }
+            const metadata = decoder.GetMetadata(meshOrCloud);
+            if (metadata.ptr) {
+                geometry.metadata = decodeMetadata(metadataQuerier, metadata, metadataTypes);
             }
         } else {
             throw new Error(status.error_msg());
