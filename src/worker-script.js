@@ -138,6 +138,20 @@ function decodeMetadata(querier, metadata, metadataTypes) {
                             entry[idx] = arr.GetValue(idx);
                         }
                         break;
+                    case 'mesh':
+                    case 'binary':
+                        arr = new draco.DracoUInt8Array();
+                        querier.GetBinaryEntry(metadata, name, arr);
+                        length = arr.size();
+                        ptr = arr.data().ptr;
+                        entry = new Uint8Array(draco.HEAPU8.buffer.slice(ptr, ptr + length));
+                        // for (let idx = 0; idx < length; idx++) {
+                        //     entry[idx] = arr.GetValue(idx);
+                        // }
+                        if (type === 'mesh') {
+                            entry = decode([entry], { metadata: metadataTypes });
+                        }
+                        break;
                 }
             } catch (err) {
                 console.log(err);
@@ -180,7 +194,7 @@ function decode(drcs, configs) {
             status = decoder.DecodeBufferToPointCloud(buffer, meshOrCloud);
         }
 
-        if (status.ok()) {
+        if (status && status.ok()) {
             for (const attributeName in attributeIDs) {
                 const attributeType = attributeTypes[attributeName];
                 const attributeID = decoder.GetAttributeId(meshOrCloud, draco[attributeIDs[attributeName]]);
