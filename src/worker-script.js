@@ -149,7 +149,7 @@ function decodeMetadata(querier, metadata, metadataTypes) {
                         //     entry[idx] = arr.GetValue(idx);
                         // }
                         if (type === 'mesh') {
-                            entry = decode([entry], { metadata: metadataTypes });
+                            entry = decode([entry], { metadata: metadataTypes })[0];
                         }
                         break;
                 }
